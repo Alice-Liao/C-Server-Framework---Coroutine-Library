@@ -1,110 +1,126 @@
-# 项目概述
+Project Overview
 
-本项目是对sylar服务器框架的改编和简化，专注于协程库的部分。通过引入协程、调度器和定时器等核心模块，利用HOOK技术将Linux系统中的传统同步函数（如 `sleep`、`read`、`write` 等）转化为异步版本。此改造允许保持同步I/O的编程方式，同时享受异步执行的效率和响应速度提升。
+This project is a simplified adaptation of the Sylar server framework, focusing on the coroutine library. By introducing core modules such as coroutines, scheduler, and timer, and leveraging HOOK technology, it transforms traditional synchronous Linux system functions (e.g., sleep, read, write) into asynchronous versions.
+This modification preserves the synchronous I/O programming style while providing the efficiency and responsiveness of asynchronous execution.
 
-## 运行环境
+Runtime Environment
 
 Ubuntu 22.04 LTS
 
-## 编译指令
+Build Instructions
 
-首先进入文件所在目录
-```shell
-cd coroutine-lib && cd fiber_lib && cd 6hook 
-```
+Navigate to the project directory:
 
-在6hook文件下编译链接可执行文件
-```shell
+cd coroutine-lib && cd fiber_lib && cd 6hook
+
+
+Compile and link the executable in the 6hook directory:
+
 g++ *.cpp -std=c++17 -o main -ldl -lpthread
-```
 
-执行可执行文件
-```shell
+
+Run the executable:
+
 ./main
-```
-如图： 
 
-![](./pics/run1.jpg)
 
-### 测试工具的使用：
-在ubuntu安装
-```shell
+Example:
+
+
+Test Tool Setup
+
+Install Apache Benchmark on Ubuntu:
+
 sudo apt update
 sudo apt install apache2-utils
-```
 
-判断是否安装成功
-```shell
+
+Verify installation:
+
 ab -V
-```
 
-### 通过测试工具运行项目:
+Run Project with the Test Tool
 
-**注意别忘记启动main可执行程序，并且额外开一个窗口执行以下内容**
+⚠️ Remember to start the main executable first, and open another terminal window to run the following command:
 
-测试工具apache的命令使用的是:
+ab -n 100 -c 10 http://127.0.0.1:8080/
 
-```shell
-ab -n 100 -c 10  http://127.0.0.1:8080/
-```
 
-如图： 
-![](./pics/run2.jpg)
+Example:
 
-* -n 连接数
-* -c 并发数
 
-可以根据自己的服务器的CPU数量，适当调整 测试连接数 和 并发数的数量。
+-n: total number of requests
 
-## 主要模块介绍
+-c: number of concurrent requests
 
-### 协程类
-* 使用非对称的独立栈协程。
-* 支持调度协程与任务协程之间的高效切换。
+Adjust the values based on the number of CPU cores on your server.
 
-### 调度器
-* 结合线程池和任务队列维护任务。
-* 工作线程采用FIFO策略运行协程任务，并负责将epoll中就绪的文件描述符事件和超时任务加入队列。
+Main Modules
+Coroutine
 
-### 定时器
-* 利用最小堆算法管理定时器，优化超时回调函数的获取效率。
+Implements asymmetric, independent-stack coroutines.
 
-## 关键技术点
+Supports efficient switching between scheduler coroutines and task coroutines.
 
-* 线程同步与互斥
-* 线程池管理
-* epoll的事件驱动模型
-* Linux网络编程
-* 泛型编程
-* 同步与异步I/O
-* HOOK技术
+Scheduler
 
-## 待优化和扩展功能
+Maintains tasks using a thread pool and task queue.
 
-### 内存池优化
-当前协程在创建时自动分配独立栈空间，销毁时释放，引入频繁的系统调用。通过内存池技术优化可减少系统调用，提高内存使用效率。
+Worker threads run coroutine tasks in FIFO order and push ready file descriptor events (from epoll) and timed-out tasks into the queue.
 
-### 协程嵌套支持
-目前只支持主协程与子协程之间的切换，无法实现协程的嵌套。参考libco的设计，实现更复杂的协程嵌套功能，允许在协程内部再次创建新的协程层级。
+Timer
 
-### 复杂调度算法
-引入类似操作系统的进程调度算法，如优先级、响应比和时间片等，以支持更复杂的调度策略，满足不同场景下的需求。
+Uses a min-heap algorithm to manage timers, improving timeout callback retrieval efficiency.
 
-## 核心概念详解
-### 同步I/O（Synchronous I/O）
-应用程序执行I/O操作必须等待操作完成，期间应用程序被阻塞，无法执行其他任务。
+Key Technologies
 
-### 异步I/O（Asynchronous I/O）
-应用程序可以在I/O操作执行过程中继续执行其他代码，I/O操作通过事件回调机制完成通知。
+Thread synchronization and mutexes
 
-### HOOK技术
-对系统底层函数进行封装，增强功能且保持原有调用接口的兼容性，使函数在保持原有调用方式的同时，增加新的功能实现。
+Thread pool management
 
-## 性能测试 
+Epoll-based event-driven model
 
-写完了协程库，我们势必要对其进行一些测试来验证我们写的协程库是否有用，相比于其他库有什么优势，分析出使用场景和性能瓶颈：
+Linux network programming
 
-* 你是否对你写的协程库进行过测试？
+Generic programming
+
+Synchronous & asynchronous I/O
+
+HOOK technology
+
+Planned Optimizations & Extensions
+Memory Pool Optimization
+
+Currently, each coroutine allocates and frees its own stack, causing frequent system calls. A memory pool can reduce system calls and improve memory efficiency.
+
+Nested Coroutine Support
+
+At present, only main–child coroutine switching is supported. By referencing libco, more complex nested coroutine hierarchies could be implemented.
+
+Advanced Scheduling Algorithms
+
+Introduce OS-like process scheduling strategies (priority, response ratio, time slicing) to support more complex use cases.
+
+Core Concepts
+Synchronous I/O
+
+The application blocks until an I/O operation completes, preventing other tasks from running during the wait.
+
+Asynchronous I/O
+
+The application continues execution while I/O is in progress. Completion is notified via callbacks or events.
+
+HOOK Technology
+
+Wraps system-level functions to enhance functionality while preserving compatibility with the original API, enabling new features without changing existing call patterns.
+
+Performance Testing
+
+After building a coroutine library, it is essential to validate its effectiveness through benchmarking:
+
+Have you tested your coroutine library?
+
+What advantages does it provide compared to other libraries?
 * 你这个协程库相比于其他库有什么优势？ 
 
 这些问题也是面试官经常会问到的，性能测试也是比较容易体现出我们思考和能力的环节，进行详细的性能也会成为项目的一大亮点。 
